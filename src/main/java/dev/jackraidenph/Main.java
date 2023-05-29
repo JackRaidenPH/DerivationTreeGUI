@@ -68,7 +68,7 @@ public class Main {
         }
 
         Node trace(int level, String contents) {
-            if (level < this.level)
+            if (level <= this.level)
                 return this.parent;
             else {
                 Node n = new Node(this, level, contents);
