@@ -148,7 +148,7 @@ public class Main {
             contents = contents.replace("Exit:", "Resolved:");
             contents = contents.replaceAll("\\^", " ");
             contents = contents.trim();
-            boolean replace = varPattern.matcher(contents).results().count() != 0;
+            boolean replace = varPattern.matcher(contents).results().findAny().isPresent();
 
             varPattern.matcher(contents).results().forEach(res ->
             {
