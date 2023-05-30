@@ -21,7 +21,7 @@ public class Main {
                 visible([-all,+exit,+unify,+fail]),
                 protocol('trace_op.txt'),
                 trace,
-                find(['>', '>', '>', ' ', '<', '<', '<'], ['<', '<', '<', ' ', '>', '>', '>']),
+                begin,
                 notrace,
                 noprotocol.""");
 
@@ -48,9 +48,15 @@ public class Main {
 
         }
 
-        try (PrintWriter pw = new PrintWriter("out.txt", StandardCharsets.UTF_8)) {
-            pw.println(root.toString());
+        for (Node child : root.children) {
+            System.out.println(Node.getBranchLength(child));
         }
+
+        try (PrintWriter pw = new PrintWriter("out.txt", StandardCharsets.UTF_8)) {
+            pw.println(root);
+        }
+
+        //root.optimize();
 
         new Query("halt.").hasSolution();
     }
@@ -67,12 +73,64 @@ public class Main {
             this.contents = contents;
         }
 
-        Node trace(int level, String contents) {
-            if (level <= this.level)
+        void optimize() {
+            optimize(this);
+        }
+
+        void optimize(Node branchRoot) {
+            for (Node child : branchRoot.children) {
+                if (getBranchLength(child) != -1) {
+                    reduceBranch(child);
+                } else {
+                    optimize(child);
+                }
+            }
+        }
+
+        static boolean isFailBranch(Node branchRoot) {
+            if (branchRoot.children.size() == 1) {
+                return isFailBranch(branchRoot.children.get(0));
+            } else if (branchRoot.children.isEmpty()) {
+                return branchRoot.contents.toLowerCase(Locale.ROOT).contains("fail");
+            }
+            return false;
+        }
+
+        static int getBranchLength(Node branchRoot) {
+            return getBranchLength(branchRoot, 0);
+        }
+
+        static int getBranchLength(Node branchRoot, int length) {
+            if (branchRoot.children.size() == 1) {
+                return getBranchLength(branchRoot.children.get(0), length + 1);
+            } else if (branchRoot.children.isEmpty()) {
+                return length;
+            }
+            return -1;
+        }
+
+        static void reduceBranch(Node branchRoot) {
+            reduceBranch(branchRoot, branchRoot);
+        }
+
+        static void reduceBranch(Node branchRoot, Node current) {
+            if (!current.children.isEmpty()) {
+                if (branchRoot != current) {
+                    current.contents = "...";
+                }
+                reduceBranch(branchRoot, current.children.get(0));
+            }
+        }
+
+        public Node trace(int level, String contents) {
+            if (level <= this.level) {
                 return this.parent;
-            else {
+            } else {
                 Node n = new Node(this, level, contents);
                 children.add(n);
+                /*children = children.stream()
+                        .filter(node -> !isFailBranch(node))
+                        .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);*/
                 return n;
             }
         }
@@ -87,11 +145,16 @@ public class Main {
         Pattern varPattern = Pattern.compile("_\\d*");
 
         StringBuilder current = new StringBuilder();
+
         private void print(StringBuilder buffer, String prefix, String childrenPrefix) {
             buffer.append(prefix);
+            contents = contents.replace("Exit:", "Resolved:");
             varPattern.matcher(contents).results().forEach(res ->
             {
-                varMap.putIfAbsent(res.group(), "X" + varMap.size());
+                int cycles = varMap.size() / 26;
+                int letter = varMap.size() % 26;
+                varMap.putIfAbsent(res.group(),
+                        String.valueOf((char) ((int) 'A' + letter)) + (cycles > 0 ? cycles : ""));
                 current.append(res.group());
             });
             if (!current.isEmpty()) {
