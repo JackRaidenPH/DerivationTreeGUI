@@ -14,16 +14,16 @@ public class Main {
     public static void main(String[] args) throws IOException {
         Query initQuery = new Query("consult('source.pl')");
         initQuery.hasSolution();
-        //REPLACE #find/2 LINE WITH YOUR QUERY!
+
         Query solutionQuery
                 = new Query("""
                 leash(-all),
                 visible([-all,+exit,+unify,+fail]),
                 protocol('trace_op.txt'),
                 trace,
-                begin,
+                %s,
                 notrace,
-                noprotocol.""");
+                noprotocol.""".formatted(args[0]));
 
         solutionQuery.hasSolution();
 
@@ -48,15 +48,11 @@ public class Main {
 
         }
 
-        for (Node child : root.children) {
-            System.out.println(Node.getBranchLength(child));
-        }
+        root.optimize();
 
         try (PrintWriter pw = new PrintWriter("out.txt", StandardCharsets.UTF_8)) {
             pw.println(root);
         }
-
-        //root.optimize();
 
         new Query("halt.").hasSolution();
     }
@@ -78,9 +74,14 @@ public class Main {
         }
 
         void optimize(Node branchRoot) {
+            branchRoot.children = branchRoot.children.stream().filter(n -> !Node.isFailBranch(n))
+                    .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
             for (Node child : branchRoot.children) {
                 if (getBranchLength(child) != -1) {
                     reduceBranch(child);
+                    if (isFailBranch(child)) {
+                        child.children.clear();
+                    }
                 } else {
                     optimize(child);
                 }
@@ -117,6 +118,7 @@ public class Main {
             if (!current.children.isEmpty()) {
                 if (branchRoot != current) {
                     current.contents = "...";
+                    branchRoot.children.set(0, current);
                 }
                 reduceBranch(branchRoot, current.children.get(0));
             }
@@ -128,9 +130,6 @@ public class Main {
             } else {
                 Node n = new Node(this, level, contents);
                 children.add(n);
-                /*children = children.stream()
-                        .filter(node -> !isFailBranch(node))
-                        .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);*/
                 return n;
             }
         }
@@ -142,28 +141,28 @@ public class Main {
             return buffer.toString();
         }
 
-        Pattern varPattern = Pattern.compile("_\\d*");
-
-        StringBuilder current = new StringBuilder();
+        Pattern varPattern = Pattern.compile("_\\d+");
 
         private void print(StringBuilder buffer, String prefix, String childrenPrefix) {
             buffer.append(prefix);
             contents = contents.replace("Exit:", "Resolved:");
+            contents = contents.replaceAll("\\^", " ");
+            contents = contents.trim();
+            boolean replace = varPattern.matcher(contents).results().count() != 0;
+
             varPattern.matcher(contents).results().forEach(res ->
             {
                 int cycles = varMap.size() / 26;
                 int letter = varMap.size() % 26;
-                varMap.putIfAbsent(res.group(),
-                        String.valueOf((char) ((int) 'A' + letter)) + (cycles > 0 ? cycles : ""));
-                current.append(res.group());
+                String name = String.valueOf((char) ((int) 'A' + letter)) + (cycles > 0 ? cycles : "");
+                varMap.putIfAbsent(res.group(), name);
+                buffer.append(contents.replace(res.group(), name));
             });
-            if (!current.isEmpty()) {
-                String newContents = contents.replace(current.toString(), varMap.get(current.toString()));
-                buffer.append(newContents);
-            } else {
+
+            if (!replace) {
                 buffer.append(contents);
             }
-            current.setLength(0);
+
             buffer.append('\n');
             for (Iterator<Node> it = children.iterator(); it.hasNext(); ) {
                 Node next = it.next();
