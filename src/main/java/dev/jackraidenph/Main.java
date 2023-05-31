@@ -74,14 +74,14 @@ public class Main {
         }
 
         void optimize(Node branchRoot) {
-            branchRoot.children = branchRoot.children.stream().filter(n -> !Node.isFailBranch(n))
-                    .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+            /*branchRoot.children = branchRoot.children.stream().filter(n -> !Node.isFailBranch(n))
+                    .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);*/
             for (Node child : branchRoot.children) {
                 if (getBranchLength(child) != -1) {
                     reduceBranch(child);
-                    if (isFailBranch(child)) {
+                    /*if (isFailBranch(child)) {
                         child.children.clear();
-                    }
+                    }*/
                 } else {
                     optimize(child);
                 }
@@ -147,21 +147,24 @@ public class Main {
             buffer.append(prefix);
             contents = contents.replace("Exit:", "Resolved:");
             contents = contents.replaceAll("\\^", " ");
+            contents = contents.replaceAll("\\[\\d;\\d+m", "");
+            contents = contents.replaceAll("\\[0m", "");
+            contents = contents.replaceAll(" \u001B", "");
             contents = contents.trim();
             boolean replace = varPattern.matcher(contents).results().findAny().isPresent();
 
-            varPattern.matcher(contents).results().forEach(res ->
+            /*varPattern.matcher(contents).results().forEach(res ->
             {
                 int cycles = varMap.size() / 26;
                 int letter = varMap.size() % 26;
                 String name = String.valueOf((char) ((int) 'A' + letter)) + (cycles > 0 ? cycles : "");
                 varMap.putIfAbsent(res.group(), name);
                 buffer.append(contents.replace(res.group(), name));
-            });
+            });*/
 
-            if (!replace) {
+            //if (!replace) {
                 buffer.append(contents);
-            }
+            //}
 
             buffer.append('\n');
             for (Iterator<Node> it = children.iterator(); it.hasNext(); ) {

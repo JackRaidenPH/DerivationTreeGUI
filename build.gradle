@@ -4,10 +4,11 @@ plugins {
     id 'org.openjfx.javafxplugin' version '0.0.10'
     id 'org.beryx.jlink' version '2.24.1'
     id 'org.gradlex.extra-java-module-info' version "1.4"
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group 'dev.jackraidenph'
-version '1.0-SNAPSHOT'
+version '0.1.3'
 
 repositories {
     mavenCentral()
@@ -27,8 +28,8 @@ tasks.withType(JavaCompile) {
 }
 
 application {
-    mainModule = 'dev.jackraidenph.dertree'
-    mainClass = 'dev.jackraidenph.dertree.HelloApplication'
+    mainModule = 'dev.jackraidenph.dertreenogui'
+    mainClass = 'dev.jackraidenph.Main'
 }
 
 dependencies {
@@ -36,6 +37,12 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+}
+
+shadowJar {
+    dependencies {
+        exclude(dependency(":junit"))
+    }
 }
 
 extraJavaModuleInfo {
