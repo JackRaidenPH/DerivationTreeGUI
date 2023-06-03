@@ -90,17 +90,12 @@ public class Main {
         }
 
         void optimize(Node branchRoot) {
-            /*branchRoot.children = branchRoot.children.stream().filter(n -> !Node.isFailBranch(n))
-                    .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);*/
+            branchRoot.children =
+                    branchRoot.children.stream().filter(n -> !Node.isFailBranch(n))
+                            .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
             for (Node child : branchRoot.children) {
-                if (getBranchLength(child) != -1) {
-                    reduceBranch(child);
-                    /*if (isFailBranch(child)) {
-                        child.children.clear();
-                    }*/
-                } else {
-                    optimize(child);
-                }
+                reduceBranch(child);
+                optimize(child);
             }
         }
 
