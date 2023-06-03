@@ -9,7 +9,9 @@ import java.util.regex.Pattern;
 
 public class Main {
 
-    static Map<String, String> varMap = new HashMap<>();
+    public static int REPLACEMENT_COUNTER = 0;
+    public static final Pattern VARIABLE_PATTERN = Pattern.compile("(_\\d+)");
+    private static final int LEVEL_OFFSET = 3;
 
     public static void main(String[] args) throws IOException {
         Query initQuery = new Query("consult('source.pl')");
@@ -18,7 +20,7 @@ public class Main {
         Query solutionQuery
                 = new Query("""
                 leash(-all),
-                visible([-all,+exit,+unify,+fail]),
+                visible([+full]),
                 protocol('trace_op.txt'),
                 trace,
                 %s,
@@ -37,13 +39,25 @@ public class Main {
                 int firstOpening = line.indexOf('(');
                 int firstClosing = line.indexOf(')');
 
-                String type = line.substring(0, firstOpening).trim();
-                String message = line.substring(firstClosing + 1).trim();
-                String nodeContents = type + message;
+                try {
+                    String type = line.substring(0, firstOpening).trim();
+                    String message = line.substring(firstClosing + 1).trim();
 
-                level = Integer.parseInt(line.substring(firstOpening + 1, firstClosing)) - 3;
+                    if (VARIABLE_PATTERN.matcher(message).results().findAny().isPresent()) {
+                        int cycles = REPLACEMENT_COUNTER / 26;
+                        int letter = REPLACEMENT_COUNTER % 26;
+                        String postfix = (cycles > 0 ? String.valueOf(cycles) : "");
+                        String name = (char) ((int) 'A' + letter) + postfix;
+                        message = message.replaceAll(VARIABLE_PATTERN.pattern(), name);
+                        REPLACEMENT_COUNTER++;
+                    }
 
-                root = root.trace(level, nodeContents);
+                    level = Integer.parseInt(line.substring(firstOpening + 1, firstClosing)) - LEVEL_OFFSET;
+
+                    root = root.trace(level, type, message);
+                } catch (Exception ex) {
+                    System.err.printf("Line node skipped due to a risen exception!\n\t%s\n", ex.getLocalizedMessage());
+                }
             }
 
         }
@@ -61,11 +75,13 @@ public class Main {
         List<Node> children = new ArrayList<>();
         Node parent;
         int level;
+        String type;
         String contents;
 
-        Node(Node parent, int level, String contents) {
+        Node(Node parent, int level, String type, String contents) {
             this.parent = parent;
             this.level = level;
+            this.type = type;
             this.contents = contents;
         }
 
@@ -124,11 +140,11 @@ public class Main {
             }
         }
 
-        public Node trace(int level, String contents) {
+        public Node trace(int level, String type, String contents) {
             if (level <= this.level) {
                 return this.parent;
             } else {
-                Node n = new Node(this, level, contents);
+                Node n = new Node(this, level, type, contents);
                 children.add(n);
                 return n;
             }
@@ -141,30 +157,15 @@ public class Main {
             return buffer.toString();
         }
 
-        Pattern varPattern = Pattern.compile("_\\d+");
-
         private void print(StringBuilder buffer, String prefix, String childrenPrefix) {
             buffer.append(prefix);
-            contents = contents.replace("Exit:", "Resolved:");
             contents = contents.replaceAll("\\^", " ");
             contents = contents.replaceAll("\\[\\d;\\d+m", "");
             contents = contents.replaceAll("\\[0m", "");
             contents = contents.replaceAll(" \u001B", "");
             contents = contents.trim();
-            boolean replace = varPattern.matcher(contents).results().findAny().isPresent();
 
-            /*varPattern.matcher(contents).results().forEach(res ->
-            {
-                int cycles = varMap.size() / 26;
-                int letter = varMap.size() % 26;
-                String name = String.valueOf((char) ((int) 'A' + letter)) + (cycles > 0 ? cycles : "");
-                varMap.putIfAbsent(res.group(), name);
-                buffer.append(contents.replace(res.group(), name));
-            });*/
-
-            //if (!replace) {
-                buffer.append(contents);
-            //}
+            buffer.append(contents);
 
             buffer.append('\n');
             for (Iterator<Node> it = children.iterator(); it.hasNext(); ) {
