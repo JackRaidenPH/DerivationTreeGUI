@@ -108,19 +108,6 @@ public class Main {
             return false;
         }
 
-        static int getBranchLength(Node branchRoot) {
-            return getBranchLength(branchRoot, 0);
-        }
-
-        static int getBranchLength(Node branchRoot, int length) {
-            if (branchRoot.children.size() == 1) {
-                return getBranchLength(branchRoot.children.get(0), length + 1);
-            } else if (branchRoot.children.isEmpty()) {
-                return length;
-            }
-            return -1;
-        }
-
         static void reduceBranch(Node branchRoot) {
             reduceBranch(branchRoot, branchRoot);
         }
