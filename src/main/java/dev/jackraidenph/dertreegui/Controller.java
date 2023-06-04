@@ -1,12 +1,18 @@
 package dev.jackraidenph.dertreegui;
 
+import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import org.jpl7.PrologException;
 import org.jpl7.Query;
 
 import java.io.*;
@@ -35,6 +41,7 @@ public class Controller {
     @FXML
     void onChooseFile(ActionEvent event) {
         FileChooser fileChooser = new FileChooser();
+        fileChooser.setInitialDirectory(new File(System.getProperty("user.dir")));
 
         FileChooser.ExtensionFilter extFilter = new FileChooser
                 .ExtensionFilter("Prolog source files (*.pl)", "*.pl");
@@ -54,20 +61,24 @@ public class Controller {
 
     @FXML
     public void onDraw(ActionEvent actionEvent) {
-        Query initQuery = new Query("consult('%s')".formatted(PATH_TO_SOURCE));
-        initQuery.hasSolution();
+        try {
+            Query initQuery = new Query("consult('%s')".formatted(PATH_TO_SOURCE));
+            initQuery.hasSolution();
 
-        Query solutionQuery
-                = new Query("""
-                leash(-all),
-                visible([+full]),
-                protocol('trace.txt'),
-                trace,
-                %s,
-                notrace,
-                noprotocol.""".formatted(queryField.getText()));
+            Query solutionQuery
+                    = new Query("""
+                    leash(-all),
+                    visible([+full]),
+                    protocol('trace.txt'),
+                    trace,
+                    %s,
+                    notrace,
+                    noprotocol.""".formatted(queryField.getText()));
 
-        solutionQuery.hasSolution();
+            solutionQuery.hasSolution();
+        } catch (PrologException e) {
+            e.printStackTrace();
+        }
 
         int level = -1;
         Node root = new Node(null, level, "", "find(X, Y)");
@@ -108,6 +119,22 @@ public class Controller {
 
         if (optimizeCheckbox.isSelected()) {
             root.optimize();
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(Main.class.getResource("draw-view.fxml"));
+            Parent parent = loader.load();
+            DrawController drawController = loader.getController();
+            drawController.setParent(this);
+            drawController.setRoot(root);
+            Stage stage = new Stage();
+            stage.setTitle("Derivation Tree");
+            stage.setScene(new Scene(parent, 960, 540));
+            stage.setResizable(true);
+            stage.show();
+            drawController.draw();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         try (PrintWriter pw = new PrintWriter("out.txt", StandardCharsets.UTF_8)) {
