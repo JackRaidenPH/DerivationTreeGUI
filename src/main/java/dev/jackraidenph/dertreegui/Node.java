@@ -1,4 +1,4 @@
-package dev.jackraidenph;
+package dev.jackraidenph.dertreegui;
 
 import java.util.ArrayList;
 import java.util.Iterator;

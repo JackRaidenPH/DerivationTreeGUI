@@ -7,7 +7,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
-group 'dev.jackraidenph'
+group 'dev.jackraidenph.dertreegui'
 version '0.2.5'
 
 repositories {
@@ -24,8 +24,8 @@ tasks.withType(JavaCompile) {
 }
 
 application {
-    mainModule = 'dev.jackraidenph.dertreenogui'
-    mainClass = 'dev.jackraidenph.Main'
+    mainModule = 'dev.jackraidenph.dertreegui'
+    mainClass = 'dev.jackraidenph.dertreegui.Main'
 }
 
 dependencies {

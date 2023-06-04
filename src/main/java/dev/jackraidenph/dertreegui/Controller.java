@@ -1,4 +1,4 @@
-package dev.jackraidenph;
+package dev.jackraidenph.dertreegui;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
